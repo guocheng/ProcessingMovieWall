@@ -91,13 +91,10 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 	
 	private static final int HALF_MOVIE_WIDTH = MOVIE_WIDTH / 2;
 	private static final int HALF_MOVIE_HEIGHT = MOVIE_HEIGHT / 2;
-	private boolean disableMenu = false;
 	private Robot robot;
 	
 	private static final int TRIGGER_VR_TIME_MS = 500;
-	private boolean isRecognizing = false;
-	private int prevIndex = -1;
-	
+
 	private boolean finishedDrawing = false;
 	private float bg_color = 0;
 	
@@ -203,6 +200,9 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		//Start Voice Recognition
+		this.startVR();
 	}
 	
 	public void draw()
@@ -360,58 +360,22 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 				
 				translate(0,distY);
 			}
-//			else
-//			{
-////				if(vertical_scroll_target != -0.1 || horizontal_scroll_target != -0.1)
-////				{
-////					if(dir == ScrollDirection.UP)
-////					{
-////						distY += VERTICAL_SCROLL_STEP;
-////						
-////						if(distY >= vertical_scroll_target)
-////						{
-////							distY = vertical_scroll_target;
-////							isScrollingY = false;
-////							vertical_scroll_target = -0.1f;
-////						}
-////					}
-////
-////					if(isValid(current_selected_row, DataType.ROW_INDEX))
-////					{
-////						rows[current_selected_row].setDistX(distX);
-////					}
-////					
-////					
-////					translate(0,distY);
-////				}
-//			}
+			else
+			{
+				
+				if(isValid(current_selected_row, DataType.ROW_INDEX))
+				{
+					rows[current_selected_row].setDistX(distX);
+				}
+				
+				
+				translate(0,distY);
+			}
 			
 			
 			for(Row r : rows)
 			{
 				r.draw(this.g, Poster.RenderMode.TEXTURE);
-			}
-			
-			if(!isRecognizing)
-			{
-				if(isValid(current_selected_index, DataType.POSTER_INDEX))
-				{
-					if(posters[current_selected_index].getHoverTime() >= TRIGGER_VR_TIME_MS)
-					{
-						this.triggerVR();
-						isRecognizing = true;
-						prevIndex = current_selected_index;
-					}
-				}
-			}
-			else
-			{
-				if(prevIndex != current_selected_index)
-				{
-					this.stopVR();
-					isRecognizing = false;
-					prevIndex = current_selected_index;
-				}
 			}
 		
 		popMatrix();
@@ -423,7 +387,7 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 		
 		if(!isScrollingX && !isScrollingY)
 		{
-			if(isPlayingTrailer) drawLightBox(this.g, current_selected_index);
+			if(isPlayingTrailer) drawLightBox   (this.g, current_selected_index);
 		}
 	}
 	
@@ -562,7 +526,7 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 		}
 	}
 	
-	private void triggerVR()
+	private void startVR()
 	{
 		robot.keyPress(KeyEvent.VK_CONTROL);
 		robot.keyPress(KeyEvent.VK_SHIFT);
@@ -585,9 +549,7 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 	}
 	
 	public void mousePressed()
-	{
-		
-			
+	{	
 		if(isPlayingTrailer)
 		{
 			if(isValid(current_selected_index, DataType.POSTER_INDEX))
@@ -595,7 +557,6 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 				println("stop " + current_selected_index);
 				posters[current_selected_index].getMovie().stop();
 				isPlayingTrailer = false;
-				disableMenu = false;
 				finishedDrawing = false;
 				bg_color = 0;
 			}
@@ -609,7 +570,6 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 					println("play " + current_selected_index);
 					posters[current_selected_index].getMovie().play();
 					isPlayingTrailer = true;
-					disableMenu = true;
 				}
 			}
 		}
@@ -667,10 +627,13 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 		{
 			if(isValid(current_selected_index, DataType.POSTER_INDEX))
 			{
-				posters[current_selected_index].getMovie().stop();
-				isPlayingTrailer = false;
-				disableMenu = false;
-				isRecognizing = false;
+				if(posters[current_selected_index].getHoverTime() >= TRIGGER_VR_TIME_MS)
+				{
+					posters[current_selected_index].getMovie().stop();
+					isPlayingTrailer = false;
+					
+					this.startVR();
+				}
 			}	
 		}
 		
@@ -678,10 +641,13 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 		{
 			if(isValid(current_selected_index, DataType.POSTER_INDEX))
 			{
-				posters[current_selected_index].getMovie().play();
-				isPlayingTrailer = true;
-				disableMenu = true;
-				isRecognizing = false;
+				if(posters[current_selected_index].getHoverTime() >= TRIGGER_VR_TIME_MS)
+				{
+					posters[current_selected_index].getMovie().play();
+					isPlayingTrailer = true;
+					
+					this.startVR();
+				}
 			}
 		}
 	}
@@ -721,6 +687,9 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 	
 	public void stop()
 	{
+		//Stop Voice Recognition
+		// this.stopVR();
+		
 		if(isPlayingTrailer)
 		{
 			if(isValid(current_selected_index, DataType.POSTER_INDEX))
@@ -756,6 +725,7 @@ public class Mouse_RowSelection_LimitedMove extends PApplet implements NativeKey
 	public void nativeKeyTyped(NativeKeyEvent e) {
 		if(e.getKeyChar() == 'p')
 		{
+			
 			System.out.println("Play!");
 		}
 		
